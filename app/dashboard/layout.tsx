@@ -4,7 +4,7 @@ import type React from "react"
 
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { useAuth } from "@/context/auth-context"
+import { useAuthStore } from "@/context/auth-store"
 import Sidebar from "@/components/layout/sidebar"
 import Header from "@/components/layout/header"
 
@@ -13,7 +13,7 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode
 }) {
-  const { isAuthenticated } = useAuth()
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
   const router = useRouter()
 
   useEffect(() => {

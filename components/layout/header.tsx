@@ -1,12 +1,13 @@
 "use client"
 
-import { useAuth } from "@/context/auth-context"
+import { useAuthStore } from "@/context/auth-store"
 import { Button } from "@/components/ui/button"
 import { BellIcon, LogOutIcon } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 
 export default function Header() {
-  const { logout, user } = useAuth()
+  const logout = useAuthStore((state) => state.logout)
+  const user = useAuthStore((state) => state.user)
 
   return (
     <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b bg-white px-4 md:px-6">

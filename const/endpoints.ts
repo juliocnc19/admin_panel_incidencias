@@ -1,0 +1,45 @@
+export const endpoints = {
+  auth: {
+    login: "/auth/",
+    register: "/auth/register/",
+  },
+  users: {
+    getAll: "/users",
+    getById: (id: string | number) => `/users/${id}`,
+    create: "/users",
+    update: (id: string | number) => `/users/${id}`,
+    delete: (id: string | number) => `/users/${id}`,
+  },
+  roles: {
+    getAll: "/roles",
+    getById: (id: string | number) => `/roles/${id}`,
+    create: "/roles",
+    update: (id: string | number) => `/roles/${id}`,
+    delete: (id: string | number) => `/roles/${id}`,
+  },
+  statuses: {
+    getAll: "/statuses",
+    getById: (id: string | number) => `/statuses/${id}`,
+    create: "/statuses",
+    update: (id: string | number) => `/statuses/${id}`,
+    delete: (id: string | number) => `/statuses/${id}`,
+  },
+  incidents: {
+    getAll: "/incidents",
+    getById: (id: string | number) => `/incidents/${id}`,
+    create: "/incidents",
+    update: (id: string | number) => `/incidents/${id}`,
+    delete: (id: string | number) => `/incidents/${id}`,
+    getByUser: (userId: string | number) => `/incidents/user/${userId}`,
+    upload: "/incidents/upload",
+    download: (filename: string) => `/incidents/download/${filename}`,
+  },
+  attachments: {
+    getAll: "/attachments",
+    getById: (id: string | number) => `/attachments/${id}`,
+    getByIncident: (incidentId: string | number) => `/attachments/incident/${incidentId}`,
+    create: "/attachments",
+    update: (id: string | number) => `/attachments/${id}`,
+    delete: (id: string | number) => `/attachments/${id}`,
+  },
+} as const

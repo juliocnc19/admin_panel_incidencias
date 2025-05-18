@@ -1,6 +1,5 @@
 import { endpoints } from "@/const/endpoints";
 import { api } from "@/lib/api";
-import DataIncidents from "@/core/response/DataIncidents";
 import DataResponse from "@/core/response/DataResponse";
 import Incident from "@/core/models/Incident";
 

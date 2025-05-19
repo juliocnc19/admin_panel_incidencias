@@ -1,7 +1,7 @@
 import axios from "axios";
 import { useAuthStore } from "@/context/auth-store";
 
-const url = "http://192.168.1.31:3004"
+const url = "http://localhost:3004"
 
 export const api = axios.create({
   baseURL: url
@@ -22,9 +22,12 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      // Si el token expiró o es inválido, cerrar sesión
-      useAuthStore.getState().logout()
+    if (error.response?.status === 401 && typeof window !== "undefined") {
+      // Solo cerrar sesión si estamos en el cliente y no estamos en la página de login
+      if (!window.location.pathname.includes('/login')) {
+        useAuthStore.getState().logout()
+        window.location.href = '/login'
+      }
     }
     return Promise.reject(error)
   }

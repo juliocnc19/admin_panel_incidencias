@@ -33,7 +33,7 @@ export default function UsersPage() {
     email: "",
     username: "",
     password: "",
-    role_id: "",
+    role_id: currentUser?.role_id,
     cedula: ""
   })
   const { toast } = useToast()
@@ -65,6 +65,7 @@ export default function UsersPage() {
     } else if (usersData?.data) {
       setFilteredUsers(usersData.data)
     }
+    console.log(usersData)
   }, [searchTerm, usersData])
 
   // Cálculo para paginación
@@ -80,7 +81,7 @@ export default function UsersPage() {
         last_name: user.last_name,
         email: user.email,
         username: user.username,
-        password: "",
+        password: user.password,
         role_id: user.role_id,
         cedula: user.cedula
       })
@@ -92,7 +93,7 @@ export default function UsersPage() {
         email: "",
         username: "",
         password: "",
-        role_id: "",
+        role_id: undefined,
         cedula: ""
       })
     }
@@ -109,9 +110,10 @@ export default function UsersPage() {
 
     try {
       if (currentUser) {
-        // Editar usuario existente
+        // Editar usuario existente - excluir password
+        const { password, ...updateData } = formData
         await updateUser.mutateAsync({
-          ...formData,
+          ...updateData,
           id: currentUser.id
         })
         toast({
@@ -312,15 +314,15 @@ export default function UsersPage() {
                   type="password"
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  required={!currentUser}
+                  required
                 />
               </div>
             )}
             <div className="space-y-2">
               <Label htmlFor="role">Rol</Label>
               <Select
-                value={formData.role_id}
-                onValueChange={(value) => setFormData({ ...formData, role_id: value })}
+                value={formData.role_id?.toString()}
+                onValueChange={(value) => setFormData({ ...formData, role_id: Number(value) })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Seleccione un rol" />

@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -15,117 +14,17 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/components/ui/use-toast"
-
-// Tipo para incidente
-interface Incident {
-  id: string
-  title: string
-  description: string
-  status: "pending" | "in_progress" | "resolved" | "closed"
-  priority: "low" | "medium" | "high" | "critical"
-  createdBy: string
-  createdAt: string
-}
-
-// Datos de ejemplo
-const mockIncidents: Incident[] = [
-  {
-    id: "1",
-    title: "Error en el sistema de login",
-    description: "Los usuarios no pueden iniciar sesión en la plataforma",
-    status: "in_progress",
-    priority: "high",
-    createdBy: "Juan Pérez",
-    createdAt: "2023-05-15",
-  },
-  {
-    id: "2",
-    title: "Página de contacto no funciona",
-    description: "El formulario de contacto no envía los mensajes",
-    status: "pending",
-    priority: "medium",
-    createdBy: "María López",
-    createdAt: "2023-05-16",
-  },
-  {
-    id: "3",
-    title: "Problemas con el procesamiento de pagos",
-    description: "Las transacciones fallan intermitentemente",
-    status: "resolved",
-    priority: "critical",
-    createdBy: "Carlos Gómez",
-    createdAt: "2023-05-10",
-  },
-  {
-    id: "4",
-    title: "Error en la carga de imágenes",
-    description: "Las imágenes no se cargan correctamente en la galería",
-    status: "closed",
-    priority: "low",
-    createdBy: "Ana Martínez",
-    createdAt: "2023-05-05",
-  },
-  {
-    id: "5",
-    title: "Problemas de rendimiento en la app móvil",
-    description: "La aplicación se cierra inesperadamente",
-    status: "in_progress",
-    priority: "high",
-    createdBy: "Roberto Sánchez",
-    createdAt: "2023-05-18",
-  },
-  {
-    id: "6",
-    title: "Error en la generación de reportes",
-    description: "Los reportes mensuales muestran datos incorrectos",
-    status: "pending",
-    priority: "medium",
-    createdBy: "Laura Torres",
-    createdAt: "2023-05-20",
-  },
-  {
-    id: "7",
-    title: "Problemas con la sincronización de datos",
-    description: "Los datos no se sincronizan entre dispositivos",
-    status: "in_progress",
-    priority: "high",
-    createdBy: "Pedro Ramírez",
-    createdAt: "2023-05-19",
-  },
-  {
-    id: "8",
-    title: "Error en el módulo de facturación",
-    description: "Las facturas se generan con información incorrecta",
-    status: "pending",
-    priority: "critical",
-    createdBy: "Sofía Castro",
-    createdAt: "2023-05-14",
-  },
-  {
-    id: "9",
-    title: "Problemas con el servidor de correo",
-    description: "Los correos electrónicos no se envían correctamente",
-    status: "resolved",
-    priority: "high",
-    createdBy: "Miguel Ángel",
-    createdAt: "2023-05-12",
-  },
-  {
-    id: "10",
-    title: "Error en la API de integración",
-    description: "La API devuelve errores 500 intermitentemente",
-    status: "in_progress",
-    priority: "critical",
-    createdBy: "Lucía Fernández",
-    createdAt: "2023-05-21",
-  },
-]
+import { useGetIncidents } from "@/hooks/incidents/useGetIncidents"
+import { useCreateIncident } from "@/hooks/incidents/useCreateIncident"
+import { useUpdateIncident } from "@/hooks/incidents/useUpdateIncident"
+import { useDeleteIncident } from "@/hooks/incidents/useDeleteIncident"
+import { useGetStatuses } from "@/hooks/statuses/useGetStatuses"
+import Incident from "@/core/models/Incident"
+import { IncidentStatusBadge } from "@/components/ui/translations"
 
 export default function IncidentsPage() {
-  const [incidents, setIncidents] = useState<Incident[]>([])
   const [filteredIncidents, setFilteredIncidents] = useState<Incident[]>([])
   const [searchTerm, setSearchTerm] = useState("")
-  const [loading, setLoading] = useState(true)
   const [currentPage, setCurrentPage] = useState(1)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
@@ -134,37 +33,40 @@ export default function IncidentsPage() {
     id: "",
     title: "",
     description: "",
-    status: "pending" as "pending" | "in_progress" | "resolved" | "closed",
-    priority: "medium" as "low" | "medium" | "high" | "critical",
-    createdBy: "",
-    createdAt: "",
+    status_id: "",
+    response: "",
+    user_id: ""
   })
   const { toast } = useToast()
   const itemsPerPage = 5
 
-  useEffect(() => {
-    // Simulamos una carga de datos
-    setTimeout(() => {
-      setIncidents(mockIncidents)
-      setFilteredIncidents(mockIncidents)
-      setLoading(false)
-    }, 800)
-  }, [])
+  // Hooks
+  const { data: incidentsData, isLoading: isLoadingIncidents } = useGetIncidents()
+  const { data: statusesData } = useGetStatuses()
+  const createIncident = useCreateIncident()
+  const updateIncident = useUpdateIncident()
+  const deleteIncident = useDeleteIncident()
 
   useEffect(() => {
-    if (searchTerm) {
-      const filtered = incidents.filter(
+    if (incidentsData?.data) {
+      setFilteredIncidents(incidentsData.data)
+    }
+  }, [incidentsData])
+
+  useEffect(() => {
+    if (searchTerm && incidentsData?.data) {
+      const filtered = incidentsData.data.filter(
         (incident) =>
           incident.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
           incident.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          incident.createdBy.toLowerCase().includes(searchTerm.toLowerCase()),
+          `${incident.user?.first_name} ${incident.user?.last_name}`.toLowerCase().includes(searchTerm.toLowerCase())
       )
       setFilteredIncidents(filtered)
       setCurrentPage(1)
-    } else {
-      setFilteredIncidents(incidents)
+    } else if (incidentsData?.data) {
+      setFilteredIncidents(incidentsData.data)
     }
-  }, [searchTerm, incidents])
+  }, [searchTerm, incidentsData])
 
   // Cálculo para paginación
   const totalPages = Math.ceil(filteredIncidents.length / itemsPerPage)
@@ -175,25 +77,22 @@ export default function IncidentsPage() {
     if (incident) {
       setCurrentIncident(incident)
       setFormData({
-        id: incident.id,
+        id: incident.id.toString(),
         title: incident.title,
         description: incident.description,
-        status: incident.status,
-        priority: incident.priority,
-        createdBy: incident.createdBy,
-        createdAt: incident.createdAt,
+        status_id: incident.status_id.toString(),
+        response: incident.response || "",
+        user_id: incident.user_id.toString()
       })
     } else {
       setCurrentIncident(null)
-      const today = new Date().toISOString().split("T")[0]
       setFormData({
         id: "",
         title: "",
         description: "",
-        status: "pending",
-        priority: "medium",
-        createdBy: "Admin User", // Usuario actual
-        createdAt: today,
+        status_id: "",
+        response: "",
+        user_id: ""
       })
     }
     setIsDialogOpen(true)
@@ -204,95 +103,76 @@ export default function IncidentsPage() {
     setIsDeleteDialogOpen(true)
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (currentIncident) {
-      // Editar incidente existente
-      const updatedIncidents = incidents.map((incident) =>
-        incident.id === currentIncident.id ? { ...formData } : incident,
-      )
-      setIncidents(updatedIncidents)
-      setFilteredIncidents(updatedIncidents)
-      toast({
-        title: "Incidente actualizado",
-        description: `El incidente "${formData.title}" ha sido actualizado correctamente.`,
-      })
-    } else {
-      // Crear nuevo incidente
-      const newIncident = {
-        ...formData,
-        id: (incidents.length + 1).toString(),
+    try {
+      if (currentIncident) {
+        // Editar incidente existente
+        await updateIncident.mutateAsync({
+          ...formData,
+          id: currentIncident.id
+        })
+        toast({
+          title: "Incidente actualizado",
+          description: `El incidente "${formData.title}" ha sido actualizado correctamente.`,
+        })
+      } else {
+        // Crear nuevo incidente
+        await createIncident.mutateAsync(formData)
+        toast({
+          title: "Incidente creado",
+          description: `El incidente "${formData.title}" ha sido creado correctamente.`,
+        })
       }
-      const updatedIncidents = [...incidents, newIncident]
-      setIncidents(updatedIncidents)
-      setFilteredIncidents(updatedIncidents)
+      setIsDialogOpen(false)
+    } catch (error) {
       toast({
-        title: "Incidente creado",
-        description: `El incidente "${formData.title}" ha sido creado correctamente.`,
+        title: "Error",
+        description: "Ha ocurrido un error al procesar la solicitud.",
+        variant: "destructive"
       })
     }
-
-    setIsDialogOpen(false)
   }
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (currentIncident) {
-      const updatedIncidents = incidents.filter((incident) => incident.id !== currentIncident.id)
-      setIncidents(updatedIncidents)
-      setFilteredIncidents(updatedIncidents)
-      toast({
-        title: "Incidente eliminado",
-        description: `El incidente "${currentIncident.title}" ha sido eliminado correctamente.`,
-      })
-      setIsDeleteDialogOpen(false)
+      try {
+        await deleteIncident.mutateAsync(currentIncident.id)
+        toast({
+          title: "Incidente eliminado",
+          description: `El incidente "${currentIncident.title}" ha sido eliminado correctamente.`,
+        })
+        setIsDeleteDialogOpen(false)
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Ha ocurrido un error al eliminar el incidente.",
+          variant: "destructive"
+        })
+      }
     }
   }
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "pending":
-        return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">Pendiente</Badge>
-      case "in_progress":
-        return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">En Progreso</Badge>
-      case "resolved":
-        return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Resuelto</Badge>
-      case "closed":
-        return <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-100">Cerrado</Badge>
-      default:
-        return <Badge>Desconocido</Badge>
-    }
-  }
+  const getStatusBadge = (statusId: number) => {
+    const status = statusesData?.data?.find(s => s.id === statusId)
+    if (!status) return null
 
-  const getPriorityBadge = (priority: string) => {
-    switch (priority) {
-      case "low":
-        return (
-          <Badge variant="outline" className="border-green-500 text-green-700">
-            Baja
-          </Badge>
-        )
-      case "medium":
-        return (
-          <Badge variant="outline" className="border-blue-500 text-blue-700">
-            Media
-          </Badge>
-        )
-      case "high":
-        return (
-          <Badge variant="outline" className="border-orange-500 text-orange-700">
-            Alta
-          </Badge>
-        )
-      case "critical":
-        return (
-          <Badge variant="outline" className="border-red-500 text-red-700">
-            Crítica
-          </Badge>
-        )
-      default:
-        return <Badge variant="outline">Desconocida</Badge>
+    const variants = {
+      1: "bg-yellow-100 text-yellow-800 hover:bg-yellow-100",
+      2: "bg-blue-100 text-blue-800 hover:bg-blue-100",
+      3: "bg-green-100 text-green-800 hover:bg-green-100",
+      4: "bg-gray-100 text-gray-800 hover:bg-gray-100"
     }
+
+    return (
+      <Badge
+        variant="secondary"
+        className={variants[statusId as keyof typeof variants]}
+      >
+        {status.name}
+      </Badge>
+    )
   }
 
   return (
@@ -323,7 +203,7 @@ export default function IncidentsPage() {
             </div>
           </div>
 
-          {loading ? (
+          {isLoadingIncidents ? (
             <div className="flex justify-center items-center h-64">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             </div>
@@ -334,9 +214,9 @@ export default function IncidentsPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Título</TableHead>
+                      <TableHead>Descripción</TableHead>
                       <TableHead>Estado</TableHead>
-                      <TableHead>Prioridad</TableHead>
-                      <TableHead>Creado por</TableHead>
+                      <TableHead>Reportado por</TableHead>
                       <TableHead>Fecha</TableHead>
                       <TableHead className="text-right">Acciones</TableHead>
                     </TableRow>
@@ -346,10 +226,12 @@ export default function IncidentsPage() {
                       paginatedIncidents.map((incident) => (
                         <TableRow key={incident.id}>
                           <TableCell className="font-medium">{incident.title}</TableCell>
-                          <TableCell>{getStatusBadge(incident.status)}</TableCell>
-                          <TableCell>{getPriorityBadge(incident.priority)}</TableCell>
-                          <TableCell>{incident.createdBy}</TableCell>
-                          <TableCell>{incident.createdAt}</TableCell>
+                          <TableCell className="max-w-xs truncate">{incident.description}</TableCell>
+                          <TableCell>
+                            <IncidentStatusBadge status={incident.status?.name || 'pending'} />
+                          </TableCell>
+                          <TableCell>{incident.user?.first_name} {incident.user?.last_name}</TableCell>
+                          <TableCell>{new Date(incident.created_at).toLocaleDateString()}</TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-2">
                               <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(incident)}>
@@ -375,7 +257,11 @@ export default function IncidentsPage() {
 
               {totalPages > 1 && (
                 <div className="mt-4 flex justify-center">
-                  <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
+                  <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={setCurrentPage}
+                  />
                 </div>
               )}
             </>
@@ -383,101 +269,80 @@ export default function IncidentsPage() {
         </CardContent>
       </Card>
 
-      {/* Diálogo para crear/editar incidente */}
+      {/* Dialog para crear/editar incidente */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle>{currentIncident ? "Editar Incidente" : "Crear Incidente"}</DialogTitle>
+            <DialogTitle>{currentIncident ? "Editar Incidente" : "Nuevo Incidente"}</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleSubmit}>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="title">Título</Label>
-                <Input
-                  id="title"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="description">Descripción</Label>
-                <Textarea
-                  id="description"
-                  rows={4}
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="status">Estado</Label>
-                  <Select
-                    value={formData.status}
-                    onValueChange={(value: "pending" | "in_progress" | "resolved" | "closed") =>
-                      setFormData({ ...formData, status: value })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar estado" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="pending">Pendiente</SelectItem>
-                      <SelectItem value="in_progress">En Progreso</SelectItem>
-                      <SelectItem value="resolved">Resuelto</SelectItem>
-                      <SelectItem value="closed">Cerrado</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="priority">Prioridad</Label>
-                  <Select
-                    value={formData.priority}
-                    onValueChange={(value: "low" | "medium" | "high" | "critical") =>
-                      setFormData({ ...formData, priority: value })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar prioridad" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="low">Baja</SelectItem>
-                      <SelectItem value="medium">Media</SelectItem>
-                      <SelectItem value="high">Alta</SelectItem>
-                      <SelectItem value="critical">Crítica</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="title">Título</Label>
+              <Input
+                id="title"
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                required
+              />
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="description">Descripción</Label>
+              <Textarea
+                id="description"
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="status">Estado</Label>
+              <Select
+                value={formData.status_id}
+                onValueChange={(value) => setFormData({ ...formData, status_id: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccione un estado" />
+                </SelectTrigger>
+                <SelectContent>
+                  {statusesData?.data?.map((status) => (
+                    <SelectItem key={status.id} value={status.id.toString()}>
+                      <IncidentStatusBadge status={status.name} />
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {currentIncident && (
+              <div className="space-y-2">
+                <Label htmlFor="response">Respuesta</Label>
+                <Textarea
+                  id="response"
+                  value={formData.response}
+                  onChange={(e) => setFormData({ ...formData, response: e.target.value })}
+                />
+              </div>
+            )}
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
-                Cancelar
+              <Button type="submit" disabled={createIncident.isPending || updateIncident.isPending}>
+                {currentIncident ? "Actualizar" : "Crear"}
               </Button>
-              <Button type="submit">{currentIncident ? "Guardar cambios" : "Crear incidente"}</Button>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
 
-      {/* Diálogo para confirmar eliminación */}
+      {/* Dialog para confirmar eliminación */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Confirmar eliminación</DialogTitle>
+            <DialogTitle>Confirmar Eliminación</DialogTitle>
           </DialogHeader>
-          <div className="py-4">
-            <p>
-              ¿Estás seguro de que deseas eliminar el incidente <strong>{currentIncident?.title}</strong>?
-            </p>
-            <p className="text-sm text-muted-foreground mt-2">Esta acción no se puede deshacer.</p>
-          </div>
+          <p>¿Está seguro que desea eliminar el incidente "{currentIncident?.title}"?</p>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
               Cancelar
             </Button>
-            <Button type="button" variant="destructive" onClick={handleDelete}>
+            <Button variant="destructive" onClick={handleDelete} disabled={deleteIncident.isPending}>
               Eliminar
             </Button>
           </DialogFooter>

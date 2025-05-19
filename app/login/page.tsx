@@ -27,14 +27,20 @@ export default function LoginPage() {
       { email, password },
       {
         onSuccess: (response) => {
-          if (response.data) {
-            const userData = response.data
-            login(userData, response.data.token)
+          if (response.data && response.token) {
+            login(response.data, response.token)
             router.push("/dashboard")
+          } else {
+            toast({
+              title: "Error de autenticación",
+              description: "No se recibió el token de autenticación",
+              variant: "destructive",
+              duration: 5000,
+            })
           }
         },
         onError: (error: any) => {
-          console.log("Fallo")
+          console.error("Error de login:", error)
           const errorMessage = error.response?.data?.detail || error.message || "Credenciales incorrectas"
           toast({
             title: "Error de autenticación",

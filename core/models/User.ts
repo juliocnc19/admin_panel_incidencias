@@ -1,4 +1,4 @@
-import { Role } from "react-native"
+import Role from "./Role"
 
 export default interface User {
   id: number

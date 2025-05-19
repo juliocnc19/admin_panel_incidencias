@@ -7,50 +7,44 @@ import { useRouter } from "next/navigation"
 import { useAuthStore } from "@/context/auth-store"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/components/ui/use-toast"
+import { useLoginUser } from "@/hooks/auth/useLoginUser"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const [loading, setLoading] = useState(false)
   const router = useRouter()
   const login = useAuthStore((state) => state.login)
   const { toast } = useToast()
+  const loginMutation = useLoginUser()
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    setLoading(true)
 
-    try {
-      // Simulamos un login
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-
-      if (email === "admin@example.com" && password === "password") {
-        login({
-          id: "1",
-          name: "Admin User",
-          email: "admin@example.com",
-          role: "admin",
-        })
-        router.push("/dashboard")
-      } else {
-        toast({
-          title: "Error de autenticación",
-          description: "Credenciales incorrectas. Intenta con admin@example.com / password",
-          variant: "destructive",
-        })
+    loginMutation.mutate(
+      { email, password },
+      {
+        onSuccess: (response) => {
+          if (response.data) {
+            const userData = response.data
+            login(userData)
+            router.push("/dashboard")
+          }
+        },
+        onError: (error: any) => {
+          console.log("Fallo")
+          const errorMessage = error.response?.data?.detail || error.message || "Credenciales incorrectas"
+          toast({
+            title: "Error de autenticación",
+            description: errorMessage,
+            variant: "destructive",
+            duration: 5000,
+          })
+        }
       }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Ocurrió un error al iniciar sesión",
-        variant: "destructive",
-      })
-    } finally {
-      setLoading(false)
-    }
+    )
   }
 
   return (
@@ -84,8 +78,8 @@ export default function LoginPage() {
                 required
               />
             </div>
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Iniciando sesión..." : "Iniciar sesión"}
+            <Button type="submit" className="w-full" disabled={loginMutation.isPending}>
+              {loginMutation.isPending ? "Iniciando sesión..." : "Iniciar sesión"}
             </Button>
           </form>
         </CardContent>

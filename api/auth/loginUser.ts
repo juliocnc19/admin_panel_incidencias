@@ -1,3 +1,4 @@
+"use client"
 import { endpoints } from "@/const/endpoints";
 import { api } from "@/lib/api";
 import User from "@/core/models/User";

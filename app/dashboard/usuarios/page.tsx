@@ -1,87 +1,71 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { PlusIcon, SearchIcon, EditIcon, TrashIcon } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
 import { Pagination } from "@/components/ui/pagination"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useToast } from "@/components/ui/use-toast"
-
-// Tipo para usuario
-interface User {
-  id: string
-  name: string
-  email: string
-  role: string
-  status: "active" | "inactive"
-}
-
-// Datos de ejemplo
-const mockUsers: User[] = [
-  { id: "1", name: "Juan Pérez", email: "juan@example.com", role: "admin", status: "active" },
-  { id: "2", name: "María López", email: "maria@example.com", role: "user", status: "active" },
-  { id: "3", name: "Carlos Gómez", email: "carlos@example.com", role: "user", status: "inactive" },
-  { id: "4", name: "Ana Martínez", email: "ana@example.com", role: "editor", status: "active" },
-  { id: "5", name: "Roberto Sánchez", email: "roberto@example.com", role: "user", status: "active" },
-  { id: "6", name: "Laura Torres", email: "laura@example.com", role: "editor", status: "inactive" },
-  { id: "7", name: "Pedro Ramírez", email: "pedro@example.com", role: "user", status: "active" },
-  { id: "8", name: "Sofía Castro", email: "sofia@example.com", role: "user", status: "active" },
-  { id: "9", name: "Miguel Ángel", email: "miguel@example.com", role: "admin", status: "active" },
-  { id: "10", name: "Lucía Fernández", email: "lucia@example.com", role: "user", status: "inactive" },
-  { id: "11", name: "Javier Díaz", email: "javier@example.com", role: "editor", status: "active" },
-  { id: "12", name: "Carmen Ruiz", email: "carmen@example.com", role: "user", status: "active" },
-]
+import { useGetUsers } from "@/hooks/users/useGetUsers"
+import { useCreateUser } from "@/hooks/users/useCreateUser"
+import { useUpdateUser } from "@/hooks/users/useUpdateUser"
+import { useDeleteUser } from "@/hooks/users/useDeleteUser"
+import User from "@/core/models/User"
+import { useGetRoles } from "@/hooks/roles/useGetRoles"
+import { UserRoleBadge } from "@/components/ui/translations"
 
 export default function UsersPage() {
-  const [users, setUsers] = useState<User[]>([])
   const [filteredUsers, setFilteredUsers] = useState<User[]>([])
   const [searchTerm, setSearchTerm] = useState("")
-  const [loading, setLoading] = useState(true)
   const [currentPage, setCurrentPage] = useState(1)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [currentUser, setCurrentUser] = useState<User | null>(null)
   const [formData, setFormData] = useState({
-    id: "",
-    name: "",
+    first_name: "",
+    last_name: "",
     email: "",
-    role: "user",
-    status: "active" as "active" | "inactive",
+    username: "",
+    password: "",
+    role_id: "",
+    cedula: ""
   })
   const { toast } = useToast()
   const itemsPerPage = 5
 
-  useEffect(() => {
-    // Simulamos una carga de datos
-    setTimeout(() => {
-      setUsers(mockUsers)
-      setFilteredUsers(mockUsers)
-      setLoading(false)
-    }, 800)
-  }, [])
+  // Hooks
+  const { data: usersData, isLoading: isLoadingUsers } = useGetUsers()
+  const { data: rolesData } = useGetRoles()
+  const createUser = useCreateUser()
+  const updateUser = useUpdateUser()
+  const deleteUser = useDeleteUser()
 
   useEffect(() => {
-    if (searchTerm) {
-      const filtered = users.filter(
+    if (usersData?.data) {
+      setFilteredUsers(usersData.data)
+    }
+  }, [usersData])
+
+  useEffect(() => {
+    if (searchTerm && usersData?.data) {
+      const filtered = usersData.data.filter(
         (user) =>
-          user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          `${user.first_name} ${user.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
           user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          user.role.toLowerCase().includes(searchTerm.toLowerCase()),
+          user.username.toLowerCase().includes(searchTerm.toLowerCase())
       )
       setFilteredUsers(filtered)
       setCurrentPage(1)
-    } else {
-      setFilteredUsers(users)
+    } else if (usersData?.data) {
+      setFilteredUsers(usersData.data)
     }
-  }, [searchTerm, users])
+  }, [searchTerm, usersData])
 
   // Cálculo para paginación
   const totalPages = Math.ceil(filteredUsers.length / itemsPerPage)
@@ -92,20 +76,24 @@ export default function UsersPage() {
     if (user) {
       setCurrentUser(user)
       setFormData({
-        id: user.id,
-        name: user.name,
+        first_name: user.first_name,
+        last_name: user.last_name,
         email: user.email,
-        role: user.role,
-        status: user.status,
+        username: user.username,
+        password: "",
+        role_id: user.role_id,
+        cedula: user.cedula
       })
     } else {
       setCurrentUser(null)
       setFormData({
-        id: "",
-        name: "",
+        first_name: "",
+        last_name: "",
         email: "",
-        role: "user",
-        status: "active",
+        username: "",
+        password: "",
+        role_id: "",
+        cedula: ""
       })
     }
     setIsDialogOpen(true)
@@ -116,46 +104,54 @@ export default function UsersPage() {
     setIsDeleteDialogOpen(true)
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (currentUser) {
-      // Editar usuario existente
-      const updatedUsers = users.map((user) => (user.id === currentUser.id ? { ...formData } : user))
-      setUsers(updatedUsers)
-      setFilteredUsers(updatedUsers)
-      toast({
-        title: "Usuario actualizado",
-        description: `El usuario ${formData.name} ha sido actualizado correctamente.`,
-      })
-    } else {
-      // Crear nuevo usuario
-      const newUser = {
-        ...formData,
-        id: (users.length + 1).toString(),
+    try {
+      if (currentUser) {
+        // Editar usuario existente
+        await updateUser.mutateAsync({
+          ...formData,
+          id: currentUser.id
+        })
+        toast({
+          title: "Usuario actualizado",
+          description: `El usuario ${formData.first_name} ${formData.last_name} ha sido actualizado correctamente.`,
+        })
+      } else {
+        // Crear nuevo usuario
+        await createUser.mutateAsync(formData)
+        toast({
+          title: "Usuario creado",
+          description: `El usuario ${formData.first_name} ${formData.last_name} ha sido creado correctamente.`,
+        })
       }
-      const updatedUsers = [...users, newUser]
-      setUsers(updatedUsers)
-      setFilteredUsers(updatedUsers)
+      setIsDialogOpen(false)
+    } catch (error) {
       toast({
-        title: "Usuario creado",
-        description: `El usuario ${formData.name} ha sido creado correctamente.`,
+        title: "Error",
+        description: "Ha ocurrido un error al procesar la solicitud.",
+        variant: "destructive"
       })
     }
-
-    setIsDialogOpen(false)
   }
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (currentUser) {
-      const updatedUsers = users.filter((user) => user.id !== currentUser.id)
-      setUsers(updatedUsers)
-      setFilteredUsers(updatedUsers)
-      toast({
-        title: "Usuario eliminado",
-        description: `El usuario ${currentUser.name} ha sido eliminado correctamente.`,
-      })
-      setIsDeleteDialogOpen(false)
+      try {
+        await deleteUser.mutateAsync(currentUser.id)
+        toast({
+          title: "Usuario eliminado",
+          description: `El usuario ${currentUser.first_name} ${currentUser.last_name} ha sido eliminado correctamente.`,
+        })
+        setIsDeleteDialogOpen(false)
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Ha ocurrido un error al eliminar el usuario.",
+          variant: "destructive"
+        })
+      }
     }
   }
 
@@ -187,7 +183,7 @@ export default function UsersPage() {
             </div>
           </div>
 
-          {loading ? (
+          {isLoadingUsers ? (
             <div className="flex justify-center items-center h-64">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             </div>
@@ -199,8 +195,9 @@ export default function UsersPage() {
                     <TableRow>
                       <TableHead>Nombre</TableHead>
                       <TableHead>Email</TableHead>
+                      <TableHead>Usuario</TableHead>
+                      <TableHead>Cédula</TableHead>
                       <TableHead>Rol</TableHead>
-                      <TableHead>Estado</TableHead>
                       <TableHead className="text-right">Acciones</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -208,20 +205,12 @@ export default function UsersPage() {
                     {paginatedUsers.length > 0 ? (
                       paginatedUsers.map((user) => (
                         <TableRow key={user.id}>
-                          <TableCell className="font-medium">{user.name}</TableCell>
+                          <TableCell className="font-medium">{user.first_name} {user.last_name}</TableCell>
                           <TableCell>{user.email}</TableCell>
-                          <TableCell>{user.role}</TableCell>
+                          <TableCell>{user.username}</TableCell>
+                          <TableCell>{user.cedula}</TableCell>
                           <TableCell>
-                            <Badge
-                              variant={user.status === "active" ? "default" : "secondary"}
-                              className={
-                                user.status === "active"
-                                  ? "bg-green-100 text-green-800 hover:bg-green-100"
-                                  : "bg-gray-100 text-gray-800 hover:bg-gray-100"
-                              }
-                            >
-                              {user.status === "active" ? "Activo" : "Inactivo"}
-                            </Badge>
+                            <UserRoleBadge role={user.role?.name || 'user'} />
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-2">
@@ -237,7 +226,7 @@ export default function UsersPage() {
                       ))
                     ) : (
                       <TableRow>
-                        <TableCell colSpan={5} className="text-center py-8">
+                        <TableCell colSpan={6} className="text-center py-8">
                           No se encontraron usuarios
                         </TableCell>
                       </TableRow>
@@ -248,7 +237,11 @@ export default function UsersPage() {
 
               {totalPages > 1 && (
                 <div className="mt-4 flex justify-center">
-                  <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
+                  <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={setCurrentPage}
+                  />
                 </div>
               )}
             </>
@@ -256,89 +249,112 @@ export default function UsersPage() {
         </CardContent>
       </Card>
 
-      {/* Diálogo para crear/editar usuario */}
+      {/* Dialog para crear/editar usuario */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{currentUser ? "Editar Usuario" : "Crear Usuario"}</DialogTitle>
+            <DialogTitle>{currentUser ? "Editar Usuario" : "Nuevo Usuario"}</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleSubmit}>
-            <div className="space-y-4 py-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Nombre</Label>
+                <Label htmlFor="first_name">Nombre</Label>
                 <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  id="first_name"
+                  value={formData.first_name}
+                  onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
                   required
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="last_name">Apellido</Label>
                 <Input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  id="last_name"
+                  value={formData.last_name}
+                  onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
                   required
                 />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="role">Rol</Label>
-                <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar rol" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="admin">Administrador</SelectItem>
-                    <SelectItem value="editor">Editor</SelectItem>
-                    <SelectItem value="user">Usuario</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="status">Estado</Label>
-                <Select
-                  value={formData.status}
-                  onValueChange={(value: "active" | "inactive") => setFormData({ ...formData, status: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar estado" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="active">Activo</SelectItem>
-                    <SelectItem value="inactive">Inactivo</SelectItem>
-                  </SelectContent>
-                </Select>
               </div>
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="username">Usuario</Label>
+              <Input
+                id="username"
+                value={formData.username}
+                onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="cedula">Cédula</Label>
+              <Input
+                id="cedula"
+                value={formData.cedula}
+                onChange={(e) => setFormData({ ...formData, cedula: e.target.value })}
+                required
+              />
+            </div>
+            {!currentUser && (
+              <div className="space-y-2">
+                <Label htmlFor="password">Contraseña</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  required={!currentUser}
+                />
+              </div>
+            )}
+            <div className="space-y-2">
+              <Label htmlFor="role">Rol</Label>
+              <Select
+                value={formData.role_id}
+                onValueChange={(value) => setFormData({ ...formData, role_id: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccione un rol" />
+                </SelectTrigger>
+                <SelectContent>
+                  {rolesData?.data?.map((role) => (
+                    <SelectItem key={role.id} value={role.id.toString()}>
+                      <UserRoleBadge role={role.name} />
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
-                Cancelar
+              <Button type="submit" disabled={createUser.isPending || updateUser.isPending}>
+                {currentUser ? "Actualizar" : "Crear"}
               </Button>
-              <Button type="submit">{currentUser ? "Guardar cambios" : "Crear usuario"}</Button>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
 
-      {/* Diálogo para confirmar eliminación */}
+      {/* Dialog para confirmar eliminación */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Confirmar eliminación</DialogTitle>
+            <DialogTitle>Confirmar Eliminación</DialogTitle>
           </DialogHeader>
-          <div className="py-4">
-            <p>
-              ¿Estás seguro de que deseas eliminar al usuario <strong>{currentUser?.name}</strong>?
-            </p>
-            <p className="text-sm text-muted-foreground mt-2">Esta acción no se puede deshacer.</p>
-          </div>
+          <p>¿Está seguro que desea eliminar al usuario {currentUser?.first_name} {currentUser?.last_name}?</p>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
               Cancelar
             </Button>
-            <Button type="button" variant="destructive" onClick={handleDelete}>
+            <Button variant="destructive" onClick={handleDelete} disabled={deleteUser.isPending}>
               Eliminar
             </Button>
           </DialogFooter>

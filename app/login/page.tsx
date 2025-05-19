@@ -29,7 +29,7 @@ export default function LoginPage() {
         onSuccess: (response) => {
           if (response.data) {
             const userData = response.data
-            login(userData)
+            login(userData, response.data.token)
             router.push("/dashboard")
           }
         },

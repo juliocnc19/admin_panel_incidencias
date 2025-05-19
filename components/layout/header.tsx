@@ -24,9 +24,9 @@ export default function Header() {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white">
-                {user?.name?.charAt(0) || "U"}
+                {user?.username?.charAt(0) || "U"}
               </div>
-              <span className="hidden md:inline-block">{user?.name || "Usuario"}</span>
+              <span className="hidden md:inline-block">{user?.username || "Usuario"}</span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">

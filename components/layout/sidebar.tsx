@@ -8,11 +8,13 @@ import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { LayoutDashboardIcon, UsersIcon, AlertCircleIcon, FileIcon, MenuIcon, XIcon } from "lucide-react"
+import { useAuthStore } from "@/context/auth-store"
 
 interface SidebarItem {
   title: string
   href: string
   icon: React.ElementType
+  roles: string[]
 }
 
 const sidebarItems: SidebarItem[] = [
@@ -20,27 +22,35 @@ const sidebarItems: SidebarItem[] = [
     title: "Dashboard",
     href: "/dashboard",
     icon: LayoutDashboardIcon,
+    roles: ["admin", "analyst"]
   },
   {
     title: "Usuarios",
     href: "/dashboard/usuarios",
     icon: UsersIcon,
+    roles: ["admin"]
   },
   {
     title: "Incidentes",
     href: "/dashboard/incidentes",
     icon: AlertCircleIcon,
+    roles: ["admin", "analyst"]
   },
   {
     title: "Archivos",
     href: "/dashboard/archivos",
     icon: FileIcon,
+    roles: ["admin", "analyst"]
   },
 ]
 
 export default function Sidebar() {
   const pathname = usePathname()
   const [isOpen, setIsOpen] = useState(false)
+  const user = useAuthStore((state) => state.user)
+  const userRole = user?.role?.name?.toLowerCase() || ""
+
+  const filteredItems = sidebarItems.filter(item => item.roles.includes(userRole))
 
   return (
     <>
@@ -67,7 +77,7 @@ export default function Sidebar() {
           </div>
 
           <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-            {sidebarItems.map((item) => {
+            {filteredItems.map((item) => {
               const isActive = pathname === item.href
               return (
                 <Link key={item.href} href={item.href} onClick={() => setIsOpen(false)}>
@@ -89,10 +99,12 @@ export default function Sidebar() {
 
           <div className="p-4 border-t">
             <div className="flex items-center">
-              <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white">A</div>
+              <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white">
+                {user?.username?.charAt(0) || "U"}
+              </div>
               <div className="ml-2">
-                <p className="text-sm font-medium">Admin User</p>
-                <p className="text-xs text-muted-foreground">admin@example.com</p>
+                <p className="text-sm font-medium">{user?.username || "Usuario"}</p>
+                <p className="text-xs text-muted-foreground">{user?.email || ""}</p>
               </div>
             </div>
           </div>

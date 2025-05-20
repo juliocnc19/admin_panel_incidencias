@@ -28,6 +28,17 @@ export default function LoginPage() {
       {
         onSuccess: (response) => {
           if (response.data && response.token) {
+            const userRole = response.data.role?.name?.toLowerCase()
+            if (userRole !== 'admin' && userRole !== 'analyst') {
+              toast({
+                title: "Acceso denegado",
+                description: "Este panel es exclusivo para administradores y analistas",
+                variant: "destructive",
+                duration: 5000,
+              })
+              return
+            }
+            
             login(response.data, response.token)
             router.push("/dashboard")
           } else {

@@ -19,6 +19,7 @@ import { useCreateIncident } from "@/hooks/incidents/useCreateIncident"
 import { useUpdateIncident } from "@/hooks/incidents/useUpdateIncident"
 import { useDeleteIncident } from "@/hooks/incidents/useDeleteIncident"
 import { useGetStatuses } from "@/hooks/statuses/useGetStatuses"
+import { useAuthStore } from "@/context/auth-store"
 import Incident from "@/core/models/Incident"
 import { IncidentStatusBadge } from "@/components/ui/translations"
 
@@ -39,6 +40,8 @@ export default function IncidentsPage() {
   })
   const { toast } = useToast()
   const itemsPerPage = 5
+  const user = useAuthStore((state) => state.user)
+  const isAdmin = user?.role?.name?.toLowerCase() === 'admin'
 
   // Hooks
   const { data: incidentsData, isLoading: isLoadingIncidents } = useGetIncidents()
@@ -237,9 +240,11 @@ export default function IncidentsPage() {
                               <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(incident)}>
                                 <EditIcon className="h-4 w-4" />
                               </Button>
-                              <Button variant="ghost" size="icon" onClick={() => handleOpenDeleteDialog(incident)}>
-                                <TrashIcon className="h-4 w-4" />
-                              </Button>
+                              {isAdmin && (
+                                <Button variant="ghost" size="icon" onClick={() => handleOpenDeleteDialog(incident)}>
+                                  <TrashIcon className="h-4 w-4" />
+                                </Button>
+                              )}
                             </div>
                           </TableCell>
                         </TableRow>

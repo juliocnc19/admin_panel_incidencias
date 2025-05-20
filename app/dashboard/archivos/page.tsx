@@ -17,6 +17,7 @@ import { useGetIncidents } from "@/hooks/incidents/useGetIncidents"
 import { useUploadIncident } from "@/hooks/incidents/useUploadIncident"
 import { useDownloadIncident } from "@/hooks/incidents/useDownloadIncident"
 import { useDeleteIncident } from "@/hooks/incidents/useDeleteIncident"
+import { useAuthStore } from "@/context/auth-store"
 import Attachment from "@/core/models/Attachment"
 import Incident from "@/core/models/Incident"
 
@@ -38,6 +39,8 @@ export default function AttachmentsPage() {
   const [selectedIncident, setSelectedIncident] = useState<string>("")
   const { toast } = useToast()
   const itemsPerPage = 5
+  const user = useAuthStore((state) => state.user)
+  const isAdmin = user?.role?.name?.toLowerCase() === 'admin'
 
   // Hooks
   const { data: incidentsData, isLoading: isLoadingIncidents } = useGetIncidents()
@@ -195,7 +198,7 @@ export default function AttachmentsPage() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Archivos</h1>
-        <Button onClick={handleOpenDialog}>
+        <Button onClick={() => handleOpenDialog()}>
           <PlusIcon className="h-4 w-4 mr-2" />
           Subir Archivo
         </Button>
@@ -258,9 +261,11 @@ export default function AttachmentsPage() {
                               <Button variant="ghost" size="icon" onClick={() => handleDownload(attachment)}>
                                 <DownloadIcon className="h-4 w-4" />
                               </Button>
-                              <Button variant="ghost" size="icon" onClick={() => handleOpenDeleteDialog(attachment)}>
-                                <TrashIcon className="h-4 w-4" />
-                              </Button>
+                              {isAdmin && (
+                                <Button variant="ghost" size="icon" onClick={() => handleOpenDeleteDialog(attachment)}>
+                                  <TrashIcon className="h-4 w-4" />
+                                </Button>
+                              )}
                             </div>
                           </TableCell>
                         </TableRow>

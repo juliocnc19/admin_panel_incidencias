@@ -5,5 +5,8 @@ export const useGetRoles = () => {
   return useQuery({
     queryKey: ["roles"],
     queryFn: getRoles,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    staleTime: 0,
   });
 };

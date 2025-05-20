@@ -6,8 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { PlusIcon, SearchIcon, EditIcon, TrashIcon } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
+import { SearchIcon, EditIcon, TrashIcon } from "lucide-react"
 import { Pagination } from "@/components/ui/pagination"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
@@ -15,7 +14,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/components/ui/use-toast"
 import { useGetIncidents } from "@/hooks/incidents/useGetIncidents"
-import { useCreateIncident } from "@/hooks/incidents/useCreateIncident"
 import { useUpdateIncident } from "@/hooks/incidents/useUpdateIncident"
 import { useDeleteIncident } from "@/hooks/incidents/useDeleteIncident"
 import { useGetStatuses } from "@/hooks/statuses/useGetStatuses"
@@ -31,12 +29,8 @@ export default function IncidentsPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [currentIncident, setCurrentIncident] = useState<Incident | null>(null)
   const [formData, setFormData] = useState({
-    id: "",
-    title: "",
-    description: "",
     status_id: "",
-    response: "",
-    user_id: ""
+    response: ""
   })
   const { toast } = useToast()
   const itemsPerPage = 5
@@ -46,7 +40,6 @@ export default function IncidentsPage() {
   // Hooks
   const { data: incidentsData, isLoading: isLoadingIncidents } = useGetIncidents()
   const { data: statusesData } = useGetStatuses()
-  const createIncident = useCreateIncident()
   const updateIncident = useUpdateIncident()
   const deleteIncident = useDeleteIncident()
 
@@ -76,28 +69,12 @@ export default function IncidentsPage() {
   const startIndex = (currentPage - 1) * itemsPerPage
   const paginatedIncidents = filteredIncidents.slice(startIndex, startIndex + itemsPerPage)
 
-  const handleOpenDialog = (incident?: Incident) => {
-    if (incident) {
-      setCurrentIncident(incident)
-      setFormData({
-        id: incident.id.toString(),
-        title: incident.title,
-        description: incident.description,
-        status_id: incident.status_id.toString(),
-        response: incident.response || "",
-        user_id: incident.user_id.toString()
-      })
-    } else {
-      setCurrentIncident(null)
-      setFormData({
-        id: "",
-        title: "",
-        description: "",
-        status_id: "",
-        response: "",
-        user_id: ""
-      })
-    }
+  const handleOpenDialog = (incident: Incident) => {
+    setCurrentIncident(incident)
+    setFormData({
+      status_id: incident.status_id.toString(),
+      response: incident.response || ""
+    })
     setIsDialogOpen(true)
   }
 
@@ -109,30 +86,32 @@ export default function IncidentsPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
+    if (!currentIncident) return
+
+    if (!formData.response.trim()) {
+      toast({
+        title: "Error",
+        description: "La respuesta es requerida.",
+        variant: "destructive"
+      })
+      return
+    }
+
     try {
-      if (currentIncident) {
-        // Editar incidente existente
-        await updateIncident.mutateAsync({
-          ...formData,
-          id: currentIncident.id
-        })
-        toast({
-          title: "Incidente actualizado",
-          description: `El incidente "${formData.title}" ha sido actualizado correctamente.`,
-        })
-      } else {
-        // Crear nuevo incidente
-        await createIncident.mutateAsync(formData)
-        toast({
-          title: "Incidente creado",
-          description: `El incidente "${formData.title}" ha sido creado correctamente.`,
-        })
-      }
+      await updateIncident.mutateAsync({
+        id: currentIncident.id,
+        status_id: parseInt(formData.status_id),
+        response: formData.response
+      })
+      toast({
+        title: "Incidente actualizado",
+        description: "El incidente ha sido actualizado correctamente.",
+      })
       setIsDialogOpen(false)
     } catch (error) {
       toast({
         title: "Error",
-        description: "Ha ocurrido un error al procesar la solicitud.",
+        description: "Ha ocurrido un error al actualizar el incidente.",
         variant: "destructive"
       })
     }
@@ -144,7 +123,7 @@ export default function IncidentsPage() {
         await deleteIncident.mutateAsync(currentIncident.id)
         toast({
           title: "Incidente eliminado",
-          description: `El incidente "${currentIncident.title}" ha sido eliminado correctamente.`,
+          description: "El incidente ha sido eliminado correctamente.",
         })
         setIsDeleteDialogOpen(false)
       } catch (error) {
@@ -157,36 +136,9 @@ export default function IncidentsPage() {
     }
   }
 
-  const getStatusBadge = (statusId: number) => {
-    const status = statusesData?.data?.find(s => s.id === statusId)
-    if (!status) return null
-
-    const variants = {
-      1: "bg-yellow-100 text-yellow-800 hover:bg-yellow-100",
-      2: "bg-blue-100 text-blue-800 hover:bg-blue-100",
-      3: "bg-green-100 text-green-800 hover:bg-green-100",
-      4: "bg-gray-100 text-gray-800 hover:bg-gray-100"
-    }
-
-    return (
-      <Badge
-        variant="secondary"
-        className={variants[statusId as keyof typeof variants]}
-      >
-        {status.name}
-      </Badge>
-    )
-  }
-
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Incidentes</h1>
-        <Button onClick={() => handleOpenDialog()}>
-          <PlusIcon className="h-4 w-4 mr-2" />
-          Nuevo Incidente
-        </Button>
-      </div>
+      <h1 className="text-3xl font-bold">Incidentes</h1>
 
       <Card>
         <CardHeader className="pb-3">
@@ -274,31 +226,13 @@ export default function IncidentsPage() {
         </CardContent>
       </Card>
 
-      {/* Dialog para crear/editar incidente */}
+      {/* Dialog para editar incidente */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{currentIncident ? "Editar Incidente" : "Nuevo Incidente"}</DialogTitle>
+            <DialogTitle>Editar Incidente</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="title">Título</Label>
-              <Input
-                id="title"
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="description">Descripción</Label>
-              <Textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                required
-              />
-            </div>
             <div className="space-y-2">
               <Label htmlFor="status">Estado</Label>
               <Select
@@ -317,19 +251,22 @@ export default function IncidentsPage() {
                 </SelectContent>
               </Select>
             </div>
-            {currentIncident && (
-              <div className="space-y-2">
-                <Label htmlFor="response">Respuesta</Label>
-                <Textarea
-                  id="response"
-                  value={formData.response}
-                  onChange={(e) => setFormData({ ...formData, response: e.target.value })}
-                />
-              </div>
-            )}
+            <div className="space-y-2">
+              <Label htmlFor="response">Respuesta <span className="text-red-500">*</span></Label>
+              <Textarea
+                id="response"
+                value={formData.response}
+                onChange={(e) => setFormData({ ...formData, response: e.target.value })}
+                required
+                placeholder="Ingrese la respuesta del incidente"
+              />
+            </div>
             <DialogFooter>
-              <Button type="submit" disabled={createIncident.isPending || updateIncident.isPending}>
-                {currentIncident ? "Actualizar" : "Crear"}
+              <Button 
+                type="submit" 
+                disabled={updateIncident.isPending || !formData.response.trim()}
+              >
+                Actualizar
               </Button>
             </DialogFooter>
           </form>

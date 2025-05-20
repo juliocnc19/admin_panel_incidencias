@@ -5,5 +5,8 @@ export const useGetStatuses = () => {
   return useQuery({
     queryKey: ["statuses"],
     queryFn: getStatuses,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    staleTime: 0,
   });
 };

@@ -6,5 +6,8 @@ export const useGetAttachmentsByIncident = (incidentId: string | number) => {
     queryKey: ["attachments", "incident", incidentId],
     queryFn: () => getAttachmentsByIncident(incidentId),
     enabled: !!incidentId,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    staleTime: 0,
   });
 };

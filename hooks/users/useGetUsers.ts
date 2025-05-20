@@ -5,5 +5,8 @@ export const useGetUsers = () => {
   return useQuery({
     queryKey: ["users"],
     queryFn: getUsers,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    staleTime: 0,
   });
 };

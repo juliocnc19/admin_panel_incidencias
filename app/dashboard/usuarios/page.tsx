@@ -65,7 +65,6 @@ export default function UsersPage() {
     } else if (usersData?.data) {
       setFilteredUsers(usersData.data)
     }
-    console.log(usersData)
   }, [searchTerm, usersData])
 
   // Cálculo para paginación

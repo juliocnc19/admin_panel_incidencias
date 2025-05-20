@@ -23,13 +23,23 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401 && typeof window !== "undefined") {
-      // Solo cerrar sesión si estamos en el cliente y no estamos en la página de login
-      if (!window.location.pathname.includes('/login')) {
-        useAuthStore.getState().logout()
-        window.location.href = '/login'
+      const authStore = useAuthStore.getState();
+      const isAuthenticated = authStore.isAuthenticated;
+      const currentPath = window.location.pathname;
+      
+      // Solo redirigir si:
+      // 1. El usuario está autenticado (tiene token)
+      // 2. No estamos en la página de login
+      // 3. El error es específicamente de token inválido o expirado
+      if (isAuthenticated && !currentPath.includes('/login')) {
+        const errorMessage = error.response?.data?.detail?.toLowerCase() || '';
+        if (errorMessage.includes('token') || errorMessage.includes('invalid') || errorMessage.includes('expired')) {
+          authStore.logout();
+          window.location.href = '/login';
+        }
       }
     }
-    return Promise.reject(error)
+    return Promise.reject(error);
   }
-)
+);
 

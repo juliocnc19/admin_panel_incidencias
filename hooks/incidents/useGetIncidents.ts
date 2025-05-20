@@ -5,5 +5,8 @@ export const useGetIncidents = () => {
   return useQuery({
     queryKey: ["incidents"],
     queryFn: getIncidents,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    staleTime: 0,
   });
 };

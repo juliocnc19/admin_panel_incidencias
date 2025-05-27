@@ -3,7 +3,7 @@ import React from "react"
 import { Badge } from "@/components/ui/badge"
 
 export const incidentStatusConfig = {
-  draft: {
+  draf: {
     label: "Borrador",
     color: "bg-yellow-500/10 text-yellow-700 border-yellow-500/20",
   },

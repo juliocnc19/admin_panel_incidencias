@@ -8,6 +8,7 @@ import { useGetStatuses } from "@/hooks/statuses/useGetStatuses"
 import { Skeleton } from "@/components/ui/skeleton"
 import Incident from "@/core/models/Incident"
 import Status from "@/core/models/Status"
+import { getIncidentStatusLabel } from "@/components/ui/translations"
 
 export default function DashboardPage() {
   const { data: incidents, isLoading: isLoadingIncidents } = useGetIncidents()
@@ -123,7 +124,7 @@ export default function DashboardPage() {
                 return (
                   <div key={status.id}>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm">{status.name}</span>
+                      <span className="text-sm">{getIncidentStatusLabel(status.name)}</span>
                       <span className="text-sm font-medium">{count}</span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2.5">

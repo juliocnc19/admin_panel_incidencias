@@ -20,6 +20,7 @@ import { useGetStatuses } from "@/hooks/statuses/useGetStatuses"
 import { useAuthStore } from "@/context/auth-store"
 import Incident from "@/core/models/Incident"
 import { IncidentStatusBadge } from "@/components/ui/translations"
+import { useRouter } from "next/navigation"
 
 export default function IncidentsPage() {
   const [filteredIncidents, setFilteredIncidents] = useState<Incident[]>([])
@@ -36,6 +37,7 @@ export default function IncidentsPage() {
   const itemsPerPage = 5
   const user = useAuthStore((state) => state.user)
   const isAdmin = user?.role?.name?.toLowerCase() === 'admin'
+  const router = useRouter()
 
   // Hooks
   const { data: incidentsData, isLoading: isLoadingIncidents } = useGetIncidents()
@@ -55,7 +57,8 @@ export default function IncidentsPage() {
         (incident) =>
           incident.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
           incident.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          `${incident.user?.first_name} ${incident.user?.last_name}`.toLowerCase().includes(searchTerm.toLowerCase())
+          `${incident.user?.first_name} ${incident.user?.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (incident.user?.cedula || '').toLowerCase().includes(searchTerm.toLowerCase())
       )
       setFilteredIncidents(filtered)
       setCurrentPage(1)
@@ -171,6 +174,7 @@ export default function IncidentsPage() {
                       <TableHead>Título</TableHead>
                       <TableHead>Descripción</TableHead>
                       <TableHead>Estado</TableHead>
+                      <TableHead>Cédula</TableHead>
                       <TableHead>Reportado por</TableHead>
                       <TableHead>Fecha</TableHead>
                       <TableHead className="text-right">Acciones</TableHead>
@@ -179,15 +183,20 @@ export default function IncidentsPage() {
                   <TableBody>
                     {paginatedIncidents.length > 0 ? (
                       paginatedIncidents.map((incident) => (
-                        <TableRow key={incident.id}>
+                        <TableRow
+                          key={incident.id}
+                          className="cursor-pointer hover:bg-gray-100"
+                          onClick={() => router.push(`/dashboard/incidentes/${incident.id}`)}
+                        >
                           <TableCell className="font-medium">{incident.title}</TableCell>
                           <TableCell className="max-w-xs truncate">{incident.description}</TableCell>
                           <TableCell>
                             <IncidentStatusBadge status={incident.status?.name || 'pending'} />
                           </TableCell>
+                          <TableCell>{incident.user?.cedula || 'N/A'}</TableCell>
                           <TableCell>{incident.user?.first_name} {incident.user?.last_name}</TableCell>
                           <TableCell>{new Date(incident.created_at).toLocaleDateString()}</TableCell>
-                          <TableCell className="text-right">
+                          <TableCell className="text-right" onClick={e => e.stopPropagation()}>
                             <div className="flex justify-end gap-2">
                               <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(incident)}>
                                 <EditIcon className="h-4 w-4" />

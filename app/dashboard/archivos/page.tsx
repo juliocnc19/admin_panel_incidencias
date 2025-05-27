@@ -10,17 +10,17 @@ import { Badge } from "@/components/ui/badge"
 import { Pagination } from "@/components/ui/pagination"
 import { useToast } from "@/components/ui/use-toast"
 import { useGetIncidents } from "@/hooks/incidents/useGetIncidents"
-import { useDownloadIncident } from "@/hooks/incidents/useDownloadIncident"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import Attachment from "@/core/models/Attachment"
-import Incident from "@/core/models/Incident"
+import { downloadUrl } from "@/lib/dowloadUrl"
 
 // Extend the Attachment interface with additional properties
 interface ExtendedAttachment extends Attachment {
   name: string
   type: string
-  size: string
+  uploadedBy: string
+  username: string
 }
 
 export default function AttachmentsPage() {
@@ -32,7 +32,6 @@ export default function AttachmentsPage() {
 
   // Hooks
   const { data: incidentsData, isLoading: isLoadingIncidents } = useGetIncidents()
-  const downloadAttachment = useDownloadIncident()
 
   useEffect(() => {
     if (incidentsData?.data) {
@@ -42,7 +41,8 @@ export default function AttachmentsPage() {
           ...att,
           name: att.attachment_path.split('/').pop() || '',
           type: att.attachment_path.split('.').pop() || '',
-          size: '0 KB' // TODO: Get actual file size
+          uploadedBy: incident.user ? `${incident.user.first_name} ${incident.user.last_name}` : 'Desconocido',
+          username: incident.user?.username || 'Desconocido',
         }))
       })
       setFilteredAttachments(allAttachments)
@@ -58,11 +58,14 @@ export default function AttachmentsPage() {
             ...att,
             name: att.attachment_path.split('/').pop() || '',
             type: att.attachment_path.split('.').pop() || '',
-            size: '0 KB'
+            uploadedBy: incident.user ? `${incident.user.first_name} ${incident.user.last_name}` : 'Desconocido',
+            username: incident.user?.username || 'Desconocido',
           }))
-          .filter(att => 
+          .filter(att =>
             att.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            att.type.toLowerCase().includes(searchTerm.toLowerCase())
+            att.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            att.uploadedBy.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            att.username.toLowerCase().includes(searchTerm.toLowerCase())
           )
       })
       setFilteredAttachments(filtered)
@@ -74,7 +77,8 @@ export default function AttachmentsPage() {
           ...att,
           name: att.attachment_path.split('/').pop() || '',
           type: att.attachment_path.split('.').pop() || '',
-          size: '0 KB'
+          uploadedBy: incident.user ? `${incident.user.first_name} ${incident.user.last_name}` : 'Desconocido',
+          username: incident.user?.username || 'Desconocido',
         }))
       })
       setFilteredAttachments(allAttachments)
@@ -86,29 +90,6 @@ export default function AttachmentsPage() {
   const startIndex = (currentPage - 1) * itemsPerPage
   const endIndex = startIndex + itemsPerPage
   const currentAttachments = filteredAttachments.slice(startIndex, endIndex)
-
-  const handleDownload = async (filename: string) => {
-    try {
-      const response = await downloadAttachment.mutateAsync(filename)
-      const url = window.URL.createObjectURL(new Blob([response]))
-      const link = document.createElement('a')
-      link.href = url
-      link.setAttribute('download', filename)
-      document.body.appendChild(link)
-      link.click()
-      link.remove()
-      toast({
-        title: "Archivo descargado",
-        description: "El archivo se ha descargado correctamente",
-      })
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "No se pudo descargar el archivo",
-        variant: "destructive",
-      })
-    }
-  }
 
   const getFileIcon = (type: string) => {
     switch (type.toLowerCase()) {
@@ -180,7 +161,8 @@ export default function AttachmentsPage() {
                   <TableRow>
                     <TableHead>Nombre</TableHead>
                     <TableHead>Tipo</TableHead>
-                    <TableHead>Tamaño</TableHead>
+                    <TableHead>Subido por</TableHead>
+                    <TableHead>Username</TableHead>
                     <TableHead>Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -196,15 +178,14 @@ export default function AttachmentsPage() {
                       <TableCell>
                         <Badge variant="outline">{attachment.type.toUpperCase()}</Badge>
                       </TableCell>
-                      <TableCell>{attachment.size}</TableCell>
+                      <TableCell>{attachment.uploadedBy}</TableCell>
+                      <TableCell>{attachment.username}</TableCell>
                       <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDownload(attachment.attachment_path)}
-                        >
-                          <DownloadIcon className="h-4 w-4" />
-                        </Button>
+                        <a href={downloadUrl(attachment.name)} download>
+                          <Button variant="ghost" size="icon">
+                            <DownloadIcon className="h-4 w-4" />
+                          </Button>
+                        </a>
                       </TableCell>
                     </TableRow>
                   ))}

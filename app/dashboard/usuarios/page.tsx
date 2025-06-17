@@ -19,6 +19,7 @@ import { useDeleteUser } from "@/hooks/users/useDeleteUser"
 import User from "@/core/models/User"
 import { useGetRoles } from "@/hooks/roles/useGetRoles"
 import { UserRoleBadge } from "@/components/ui/translations"
+import { ExportDataButton } from "@/components/reports/ExportDataButton"
 
 export default function UsersPage() {
   const [filteredUsers, setFilteredUsers] = useState<User[]>([])
@@ -160,10 +161,18 @@ export default function UsersPage() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Usuarios</h1>
-        <Button onClick={() => handleOpenDialog()}>
-          <PlusIcon className="h-4 w-4 mr-2" />
-          Nuevo Usuario
-        </Button>
+        <div className="flex gap-2">
+          <ExportDataButton 
+            data={usersData?.data} 
+            fileName="usuarios"
+            buttonText="Exportar Usuarios"
+            isLoading={isLoadingUsers}
+          />
+          <Button onClick={() => handleOpenDialog()}>
+            <PlusIcon className="h-4 w-4 mr-2" />
+            Agregar Usuario
+          </Button>
+        </div>
       </div>
 
       <Card>

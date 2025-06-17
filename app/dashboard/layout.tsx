@@ -1,8 +1,7 @@
 "use client"
 
 import type React from "react"
-
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useAuthStore } from "@/context/auth-store"
 import Sidebar from "@/components/layout/sidebar"
@@ -13,18 +12,28 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode
 }) {
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
-  const token = useAuthStore((state) => state.token)
+  const [isLoading, setIsLoading] = useState(true)
+  const { isAuthenticated, token } = useAuthStore((state) => state)
   const router = useRouter()
 
   useEffect(() => {
-    if (!isAuthenticated || !token) {
-      router.replace("/login")
-    }
+    const timer = setTimeout(() => {
+      if (!isAuthenticated || !token) {
+        console.log("No autenticado - Redirigiendo a login")
+        router.replace("/login")
+      }
+      setIsLoading(false)
+    }, 100)
+
+    return () => clearTimeout(timer)
   }, [isAuthenticated, token, router])
 
-  if (!isAuthenticated || !token) {
-    return null
+  if (isLoading || !isAuthenticated || !token) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center">
+        <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-gray-900"></div>
+      </div>
+    )
   }
 
   return (

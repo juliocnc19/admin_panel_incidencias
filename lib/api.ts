@@ -7,7 +7,6 @@ export const api = axios.create({
   baseURL: url
 })
 
-// Interceptor para inyectar el token en cada request
 api.interceptors.request.use((config) => {
   if (typeof window !== "undefined") {
     const token = useAuthStore.getState().token
@@ -18,7 +17,6 @@ api.interceptors.request.use((config) => {
   return config
 })
 
-// Interceptor para manejar errores de autenticación
 api.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -27,13 +25,10 @@ api.interceptors.response.use(
       const isAuthenticated = authStore.isAuthenticated;
       const currentPath = window.location.pathname;
       
-      // Solo redirigir si:
-      // 1. El usuario está autenticado (tiene token)
-      // 2. No estamos en la página de login
-      // 3. El error es específicamente de token inválido o expirado
       if (isAuthenticated && !currentPath.includes('/login')) {
         const errorMessage = error.response?.data?.detail?.toLowerCase() || '';
         if (errorMessage.includes('token') || errorMessage.includes('invalid') || errorMessage.includes('expired')) {
+          console.log("para aca llego");
           authStore.logout();
           window.location.href = '/login';
         }

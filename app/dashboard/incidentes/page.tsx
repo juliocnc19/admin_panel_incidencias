@@ -21,6 +21,7 @@ import { useAuthStore } from "@/context/auth-store"
 import Incident from "@/core/models/Incident"
 import { IncidentStatusBadge } from "@/components/ui/translations"
 import { useRouter } from "next/navigation"
+import { ExportDataButton } from "@/components/reports/ExportDataButton"
 
 export default function IncidentsPage() {
   const [filteredIncidents, setFilteredIncidents] = useState<Incident[]>([])
@@ -141,7 +142,17 @@ export default function IncidentsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold">Incidentes</h1>
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold">Incidencias</h1>
+        <div className="flex gap-2">
+          <ExportDataButton 
+            data={incidentsData?.data} 
+            fileName="incidencias"
+            buttonText="Exportar Incidencias"
+            isLoading={isLoadingIncidents}
+          />
+        </div>
+      </div>
 
       <Card>
         <CardHeader className="pb-3">

@@ -11,6 +11,9 @@ const inter = Inter({ subsets: ["latin"] })
 export const metadata: Metadata = {
   title: "Panel Administrativo",
   description: "Panel administrativo moderno",
+  icons: {
+    icon: '/logo_ais.png',
+  },
 }
 
 export default function RootLayout({
